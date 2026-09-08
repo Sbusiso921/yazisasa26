@@ -7,6 +7,8 @@ import { supabase } from "../../lib/supabase";
 export default function MunicipalPage() {
     const router = useRouter();
   const [reports, setReports] = useState([]);
+  const [reviews, setReviews] = useState([]);
+const [dashboardView, setDashboardView] = useState("reports");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
@@ -58,7 +60,21 @@ const filteredReports = reports.filter((report) => {
 
     setLoading(false);
   }
+async function loadReviews() {
+  const { data, error } = await supabase
+    .from("reviews")
+    .select(
+      "id, created_at, overall_rating, reporting_clarity, ease_of_use, improvement, reviewer_name"
+    )
+    .order("created_at", { ascending: false });
 
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  setReviews(data || []);
+}
   async function updateStatus(id, newStatus) {
     setMessage("");
 
@@ -88,6 +104,7 @@ useEffect(() => {
     }
 
     loadReports();
+    loadReviews();
   }
 
   checkUser();
@@ -168,8 +185,36 @@ async function handleLogout() {
 
         </div>
       </div>
+      <div className="max-w-7xl mx-auto px-6 flex flex-wrap gap-3 mt-6">
+
+  <button
+    type="button"
+    onClick={() => setDashboardView("reports")}
+    className={`px-5 py-3 rounded-xl font-bold border ${
+      dashboardView === "reports"
+        ? "bg-green-700 text-white border-green-700"
+        : "bg-white text-green-700 border-green-700"
+    }`}
+  >
+    📋 Reports
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setDashboardView("reviews")}
+    className={`px-5 py-3 rounded-xl font-bold border ${
+      dashboardView === "reviews"
+        ? "bg-green-700 text-white border-green-700"
+        : "bg-white text-green-700 border-green-700"
+    }`}
+  >
+    ⭐ User Reviews
+  </button>
+
+</div>
     </section>
 
+    {dashboardView === "reports" && (
     <section className="max-w-7xl mx-auto px-6 py-10">
 
       {/* SUMMARY CARDS */}
@@ -500,7 +545,124 @@ async function handleLogout() {
       )}
 
     </section>
+)}
+{dashboardView === "reviews" && (
+  <section className="max-w-7xl mx-auto px-6 py-10">
 
+    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+
+      <div>
+        <p className="text-green-700 uppercase tracking-widest text-sm font-bold">
+          Prototype Feedback
+        </p>
+
+        <h2 className="text-3xl md:text-4xl font-bold mt-2">
+          User Reviews
+        </h2>
+
+        <p className="text-gray-600 mt-2">
+          Feedback submitted by people who tested YazisaSA.
+        </p>
+      </div>
+
+      <div className="bg-green-800 text-white rounded-2xl px-6 py-4">
+        <p className="text-green-200 text-sm">
+          Total Reviews
+        </p>
+
+        <p className="text-3xl font-bold">
+          {reviews.length}
+        </p>
+      </div>
+
+    </div>
+
+    {reviews.length === 0 ? (
+      <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
+        <p className="text-gray-600 font-semibold">
+          No reviews have been submitted yet.
+        </p>
+      </div>
+    ) : (
+      <div className="grid md:grid-cols-2 gap-6">
+
+        {reviews.map((review) => (
+          <div
+            key={review.id}
+            className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm"
+          >
+
+            <div className="flex items-start justify-between gap-4">
+
+              <div>
+                <p className="text-sm text-gray-500">
+                  Reviewer
+                </p>
+
+                <p className="font-bold text-lg">
+                  {review.reviewer_name || "Anonymous"}
+                </p>
+              </div>
+
+              <div className="bg-green-100 text-green-800 rounded-xl px-4 py-2 text-center">
+                <p className="text-xs font-semibold">
+                  Overall
+                </p>
+
+                <p className="text-xl font-bold">
+                  ⭐ {review.overall_rating}/5
+                </p>
+              </div>
+
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-6">
+
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm text-gray-500">
+                  Ease of Use
+                </p>
+
+                <p className="font-bold mt-1">
+                  {review.ease_of_use}/5
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm text-gray-500">
+                  Reporting Clarity
+                </p>
+
+                <p className="font-bold mt-1">
+                  {review.reporting_clarity}/5
+                </p>
+              </div>
+
+            </div>
+
+            <div className="mt-6">
+              <p className="text-sm text-gray-500">
+                Suggested Improvement
+              </p>
+
+              <p className="mt-2 text-gray-800">
+                {review.improvement || "No suggestion provided."}
+              </p>
+            </div>
+
+            <p className="text-xs text-gray-400 mt-6">
+              Submitted:{" "}
+              {new Date(review.created_at).toLocaleDateString()}
+            </p>
+
+          </div>
+        ))}
+
+      </div>
+    )}
+
+  </section>
+)}
     {/* FOOTER */}
     <footer className="bg-green-900 text-white px-6 py-8 mt-10">
 
