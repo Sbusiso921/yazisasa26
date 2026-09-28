@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
-
+import { municipalitiesByProvince } from "../../lib/municipalities";
 export default function ReportPage() {
       const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [photo, setPhoto] = useState(null);
   const [location, setLocation] = useState("");
-
+  const [province, setProvince] = useState("");
+  const [municipality, setMunicipality] = useState("");
   function getCurrentLocation() {
   if (!navigator.geolocation) {
     setMessage("Location is not supported on this device.");
@@ -204,18 +205,51 @@ if (photo) {
           <div className="grid md:grid-cols-2 gap-6">
 
             <div>
-              <label className="block font-bold mb-2">
-                Municipality
-              </label>
+  <label className="block font-bold mb-2">
+    Province
+  </label>
 
-              <input
-                type="text"
-                name="municipality"
-                placeholder="Example: City of uMhlathuze"
-                className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
-              />
-            </div>
+  <select
+    value={province}
+    onChange={(e) => {
+      setProvince(e.target.value);
+      setMunicipality("");
+    }}
+    className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none"
+  >
+    <option value="">Select a province</option>
 
+    {Object.keys(municipalitiesByProvince).map((provinceName) => (
+      <option key={provinceName} value={provinceName}>
+        {provinceName}
+      </option>
+    ))}
+  </select>
+</div>
+<div>
+  <label className="block font-bold mb-2">
+    Municipality
+  </label>
+
+  <select
+    name="municipality"
+    value={municipality}
+    onChange={(e) => setMunicipality(e.target.value)}
+    disabled={!province}
+    className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none disabled:bg-gray-100"
+  >
+    <option value="">
+      {province ? "Select a municipality" : "Select a province first"}
+    </option>
+
+    {province &&
+      municipalitiesByProvince[province]?.map((municipalityName) => (
+        <option key={municipalityName} value={municipalityName}>
+          {municipalityName}
+        </option>
+      ))}
+  </select>
+</div>
             <div>
               <label className="block font-bold mb-2">
                 Suburb / Area

@@ -56,7 +56,13 @@ export default function Home() {
 
             <a href="/track" className="hover:text-green-700">
               Track Report
-            </a>
+            </a>           
+      <a
+       href="/about"
+      className="hover:text-green-700"
+      >
+        About
+      </a>
 
             <a href="/municipal-login" className="hover:text-green-700">
               Municipal Staff
@@ -91,6 +97,13 @@ export default function Home() {
 
       <a href="/track" className="hover:text-green-700">
         Track Report
+      </a>
+      
+      <a
+       href="/about"
+      className="hover:text-green-700"
+      >
+        About
       </a>
 
       <a href="/municipal-login" className="hover:text-green-700">
