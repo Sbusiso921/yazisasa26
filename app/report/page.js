@@ -3,454 +3,582 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { municipalitiesByProvince } from "../../lib/municipalities";
+
 export default function ReportPage() {
-      const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [photo, setPhoto] = useState(null);
   const [location, setLocation] = useState("");
   const [province, setProvince] = useState("");
   const [municipality, setMunicipality] = useState("");
+
   function getCurrentLocation() {
-  if (!navigator.geolocation) {
-    setMessage("Location is not supported on this device.");
-    return;
-  }
-
-  setMessage("Getting your location...");
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-
-      setLocation(`${latitude}, ${longitude}`);
-      setMessage("Location captured successfully.");
-    },
-    () => {
-      setMessage("Could not get your location. Please allow location access.");
+    if (!navigator.geolocation) {
+      setMessage("Location is not supported on this device.");
+      return;
     }
-  );
-}
+
+    setMessage("Getting your location...");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        setLocation(`${latitude}, ${longitude}`);
+        setMessage("Location captured successfully.");
+      },
+      () => {
+        setMessage(
+          "Could not get your location. Please allow location access."
+        );
+      }
+    );
+  }
 
   async function handleSubmit(event) {
-  event.preventDefault();
+    event.preventDefault();
 
-  setLoading(true);
-  setMessage("");
+    setLoading(true);
+    setMessage("");
 
-  const formData = new FormData(event.target);
+    const formData = new FormData(event.target);
 
-  let photoUrl = null;
+    let photoUrl = null;
 
-if (photo) {
-  const fileName = `${Date.now()}-${photo.name}`;
+    // Upload photo if one was selected
+    if (photo) {
+      const fileName = `${Date.now()}-${photo.name}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("report-photos")
-    .upload(fileName, photo);
+      const { error: uploadError } = await supabase.storage
+        .from("report-photos")
+        .upload(fileName, photo);
 
-  if (uploadError) {
-    console.error(uploadError);
-    setMessage("Photo upload failed.");
+      if (uploadError) {
+        console.error(uploadError);
+        setMessage("Photo upload failed.");
+        setLoading(false);
+        return;
+      }
+
+      const { data } = supabase.storage
+        .from("report-photos")
+        .getPublicUrl(fileName);
+
+      photoUrl = data.publicUrl;
+    }
+
+    // Generate YazisaSA reference number
+    const referenceNumber =
+      "YSA-" + Math.floor(100000 + Math.random() * 900000);
+
+    // Save report to Supabase
+    const { error } = await supabase.from("reports").insert([
+      {
+        reference_number: referenceNumber,
+        problem_type: formData.get("problem_type"),
+        municipality: formData.get("municipality"),
+        area: formData.get("area"),
+        location: formData.get("location"),
+        description: formData.get("description"),
+        reporter_name: formData.get("reporter_name"),
+        contact: formData.get("contact"),
+        status: "Submitted",
+        photo_url: photoUrl,
+      },
+    ]);
+
+    if (error) {
+      console.error(error);
+      setMessage("Something went wrong. Please try again.");
+    } else {
+      setMessage(
+        "Report submitted successfully. Your reference number is " +
+          referenceNumber
+      );
+
+      event.target.reset();
+
+      setLocation("");
+      setProvince("");
+      setMunicipality("");
+      setPhoto(null);
+    }
+
     setLoading(false);
-    return;
   }
 
-  const { data } = supabase.storage
-    .from("report-photos")
-    .getPublicUrl(fileName);
-
-  photoUrl = data.publicUrl;
-}
-
-  const referenceNumber =
-    "YSA-" + Math.floor(100000 + Math.random() * 900000);
-
-  const { error } = await supabase.from("reports").insert([
-    {
-      reference_number: referenceNumber,
-      problem_type: formData.get("problem_type"),
-      municipality: formData.get("municipality"),
-      area: formData.get("area"),
-      location: formData.get("location"),
-      description: formData.get("description"),
-      reporter_name: formData.get("reporter_name"),
-      contact: formData.get("contact"),
-      status: "Submitted",
-      photo_url: photoUrl,
-    },
-  ]);
-
-  if (error) {
-    console.error(error);
-    setMessage("Something went wrong. Please try again.");
-  } else {
-    setMessage(
-      "Report submitted successfully. Your reference number is " +
-        referenceNumber
-    );
-
-    event.target.reset();
-  }
-
-  setLoading(false);
-}
   return (
-  <main className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 text-gray-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
 
-    {/* HEADER */}
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+      {/* HEADER */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
 
-        <a href="/" className="flex items-center">
-          <img
-            src="/yazisasa-logo.png"
-            alt="YazisaSA"
-            className="h-20 md:h-24 w-auto"
-          />
-        </a>
-
-        <div className="flex items-center gap-3">
-          <a
-            href="/track"
-            className="hidden sm:inline-block text-green-700 font-semibold px-4 py-2 hover:bg-green-50 rounded-lg"
-          >
-            Track Report
+          <a href="/" className="flex items-center">
+            <img
+              src="/yazisasa-logo.png"
+              alt="YazisaSA"
+              className="h-20 md:h-24 w-auto"
+            />
           </a>
 
-          <a
-            href="/"
-            className="border border-green-700 text-green-700 px-4 py-2 rounded-lg font-semibold hover:bg-green-50"
-          >
-            Home
-          </a>
-        </div>
+          <div className="flex items-center gap-3">
 
-      </div>
-    </header>
-
-    {/* HERO */}
-    <section className="border-b border-green-100">
-      <div className="max-w-4xl mx-auto px-6 pt-12 pb-8">
-
-        <p className="text-green-700 font-bold uppercase tracking-widest text-sm mb-3">
-          Municipal Fault Reporting
-        </p>
-
-        <h1 className="text-4xl md:text-5xl font-bold leading-tight">
-          Report a Municipal{" "}
-          <span className="text-green-700">Problem</span>
-        </h1>
-
-        <p className="text-gray-600 text-lg mt-4 max-w-2xl">
-          Tell us what happened, where it happened and attach evidence if
-          available. YazisaSA will generate a reference number for tracking.
-        </p>
-
-        <div className="flex flex-wrap gap-5 mt-7 text-sm font-semibold">
-          <span>📍 Add Location</span>
-          <span>📷 Attach Evidence</span>
-          <span>🔎 Track Progress</span>
-        </div>
-
-      </div>
-    </section>
-
-    {/* FORM */}
-    <section className="max-w-4xl mx-auto px-6 py-10">
-
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden"
-      >
-
-        {/* FORM HEADING */}
-        <div className="bg-green-800 text-white px-6 md:px-8 py-6">
-          <h2 className="text-2xl font-bold">
-            Fault Details
-          </h2>
-
-          <p className="text-green-100 mt-1">
-            Complete the information below to submit your report.
-          </p>
-        </div>
-
-        <div className="p-6 md:p-8 space-y-7">
-
-          {/* Problem type */}
-          <div>
-            <label className="block font-bold mb-2">
-              What is the problem?
-            </label>
-
-            <select
-              name="problem_type"
-              className="w-full border border-gray-300 rounded-xl p-3 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
-              defaultValue=""
+            <a
+              href="/track"
+              className="hidden sm:inline-block text-slate-800 font-semibold px-4 py-2 hover:text-emerald-700"
             >
-              <option value="" disabled>
-                Select a problem
-              </option>
+              Track Report
+            </a>
 
-              <option>Water Leak</option>
-              <option>Broken Streetlight</option>
-              <option>Pothole</option>
-              <option>Illegal Dumping</option>
-              <option>Damaged Road</option>
-              <option>Other Municipal Fault</option>
-            </select>
+            <a
+              href="/"
+              className="border border-slate-900 text-slate-900 px-5 py-2 rounded-md font-semibold hover:bg-slate-100"
+            >
+              Home
+            </a>
+
+          </div>
+        </div>
+      </header>
+
+      {/* HERO */}
+      <section className="bg-slate-900 text-white border-b border-slate-800">
+        <div className="max-w-4xl mx-auto px-6 py-16">
+
+          <p className="text-emerald-400 font-bold uppercase tracking-[0.2em] text-sm">
+            Municipal Fault Reporting
+          </p>
+
+          <h1 className="text-4xl md:text-5xl font-bold leading-tight mt-4">
+            Report a Municipal{" "}
+            <span className="text-emerald-400">
+              Problem
+            </span>
+          </h1>
+
+          <p className="text-slate-300 text-lg mt-5 max-w-2xl leading-8">
+            Tell us what happened, where it happened and attach evidence if
+            available. YazisaSA will generate a reference number that you can
+            use to track the report.
+          </p>
+
+          <div className="flex flex-wrap gap-6 mt-8 text-sm font-semibold text-slate-200">
+            <span>📍 Add Location</span>
+            <span>📷 Attach Evidence</span>
+            <span>🔎 Track Progress</span>
           </div>
 
-          {/* Municipality + Area */}
-          <div className="grid md:grid-cols-2 gap-6">
+        </div>
+      </section>
 
-            <div>
-  <label className="block font-bold mb-2">
-    Province
-  </label>
+      {/* FORM */}
+      <section className="max-w-4xl mx-auto px-6 py-12">
 
-  <select
-    value={province}
-    onChange={(e) => {
-      setProvince(e.target.value);
-      setMunicipality("");
-    }}
-    className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none"
-  >
-    <option value="">Select a province</option>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-sm"
+        >
 
-    {Object.keys(municipalitiesByProvince).map((provinceName) => (
-      <option key={provinceName} value={provinceName}>
-        {provinceName}
-      </option>
-    ))}
-  </select>
-</div>
-<div>
-  <label className="block font-bold mb-2">
-    Municipality
-  </label>
+          {/* FORM HEADING */}
+          <div className="border-b border-slate-200 px-6 md:px-8 py-7">
 
-  <select
-    name="municipality"
-    value={municipality}
-    onChange={(e) => setMunicipality(e.target.value)}
-    disabled={!province}
-    className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none disabled:bg-gray-100"
-  >
-    <option value="">
-      {province ? "Select a municipality" : "Select a province first"}
-    </option>
+            <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
+              Fault Details
+            </p>
 
-    {province &&
-      municipalitiesByProvince[province]?.map((municipalityName) => (
-        <option key={municipalityName} value={municipalityName}>
-          {municipalityName}
-        </option>
-      ))}
-  </select>
-</div>
+            <h2 className="text-2xl font-bold mt-2">
+              Tell us about the problem
+            </h2>
+
+            <p className="text-slate-600 mt-2">
+              Complete the information below to submit your report.
+            </p>
+
+          </div>
+
+          <div className="p-6 md:p-8 space-y-8">
+
+            {/* PROBLEM TYPE */}
             <div>
               <label className="block font-bold mb-2">
-                Suburb / Area
+                What is the problem?
+              </label>
+
+              <select
+                name="problem_type"
+                required
+                defaultValue=""
+                className="w-full border border-slate-300 rounded-md p-3 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              >
+                <option value="" disabled>
+                  Select a problem
+                </option>
+
+                <option>Water Leak</option>
+                <option>Broken Streetlight</option>
+                <option>Pothole</option>
+                <option>Illegal Dumping</option>
+                <option>Damaged Road</option>
+                <option>Other Municipal Fault</option>
+              </select>
+            </div>
+
+            {/* LOCATION DETAILS */}
+            <div className="border-t border-slate-200 pt-8">
+
+              <div className="mb-6">
+                <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
+                  Location Details
+                </p>
+
+                <h3 className="text-xl font-bold mt-1">
+                  Where is the problem?
+                </h3>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+
+                {/* PROVINCE */}
+                <div>
+                  <label className="block font-bold mb-2">
+                    Province
+                  </label>
+
+                  <select
+                    value={province}
+                    required
+                    onChange={(event) => {
+                      setProvince(event.target.value);
+                      setMunicipality("");
+                    }}
+                    className="w-full border border-slate-300 rounded-md p-3 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  >
+                    <option value="">
+                      Select a province
+                    </option>
+
+                    {Object.keys(municipalitiesByProvince).map(
+                      (provinceName) => (
+                        <option
+                          key={provinceName}
+                          value={provinceName}
+                        >
+                          {provinceName}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+
+                {/* MUNICIPALITY */}
+                <div>
+                  <label className="block font-bold mb-2">
+                    Municipality
+                  </label>
+
+                  <select
+                    name="municipality"
+                    value={municipality}
+                    required
+                    onChange={(event) =>
+                      setMunicipality(event.target.value)
+                    }
+                    disabled={!province}
+                    className="w-full border border-slate-300 rounded-md p-3 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 disabled:bg-slate-100 disabled:text-slate-400"
+                  >
+                    <option value="">
+                      {province
+                        ? "Select a municipality"
+                        : "Select a province first"}
+                    </option>
+
+                    {province &&
+                      municipalitiesByProvince[province]?.map(
+                        (municipalityName) => (
+                          <option
+                            key={municipalityName}
+                            value={municipalityName}
+                          >
+                            {municipalityName}
+                          </option>
+                        )
+                      )}
+                  </select>
+                </div>
+
+                {/* AREA */}
+                <div className="md:col-span-2">
+                  <label className="block font-bold mb-2">
+                    Suburb / Area
+                  </label>
+
+                  <input
+                    type="text"
+                    name="area"
+                    required
+                    placeholder="Example: Richards Bay Central"
+                    className="w-full border border-slate-300 rounded-md p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  />
+                </div>
+
+              </div>
+            </div>
+
+            {/* STREET LOCATION */}
+            <div className="bg-slate-50 border-l-4 border-emerald-600 p-6">
+
+              <label className="block font-bold mb-2">
+                📍 Street or Location
               </label>
 
               <input
                 type="text"
-                name="area"
-                placeholder="Example: Richards Bay Central"
-                className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
+                name="location"
+                value={location}
+                required
+                onChange={(event) =>
+                  setLocation(event.target.value)
+                }
+                placeholder="Example: Bullion Boulevard"
+                className="w-full bg-white border border-slate-300 rounded-md p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
               />
+
+              <button
+                type="button"
+                onClick={getCurrentLocation}
+                className="mt-4 border border-slate-900 bg-white text-slate-900 px-5 py-3 rounded-md font-bold hover:bg-slate-100"
+              >
+                📍 Use My Current Location
+              </button>
+
+              <p className="text-sm text-slate-600 mt-3">
+                Give enough information to help locate the problem.
+              </p>
+
             </div>
 
-          </div>
+            {/* DESCRIPTION */}
+            <div>
 
-          {/* Location */}
-          <div className="bg-green-50 border border-green-100 rounded-2xl p-5">
+              <label className="block font-bold mb-2">
+                Describe the Problem
+              </label>
 
-            <label className="block font-bold mb-2">
-              📍 Street or Location
-            </label>
+              <textarea
+                name="description"
+                rows="5"
+                required
+                placeholder="Example: There is a large water leak next to the road..."
+                className="w-full border border-slate-300 rounded-md p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              ></textarea>
 
-            <input
-              type="text"
-              name="location"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              placeholder="Example: Bullion Boulevard"
-              className="w-full bg-white border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
-            />
+            </div>
 
+            {/* PHOTO */}
+            <div className="border border-slate-200 bg-slate-50 p-6 rounded-md">
+
+              <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
+                Evidence
+              </p>
+
+              <label className="block text-lg font-bold mt-2">
+                📷 Add Photo Evidence
+              </label>
+
+              <p className="text-slate-600 text-sm mt-2 mb-4">
+                A photo can help municipal staff understand the problem faster.
+              </p>
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) =>
+                  setPhoto(event.target.files?.[0] || null)
+                }
+                className="w-full bg-white border border-slate-300 rounded-md p-3 text-slate-900"
+              />
+
+              {photo && (
+                <p className="text-emerald-700 font-semibold text-sm mt-3">
+                  ✓ Photo selected: {photo.name}
+                </p>
+              )}
+
+            </div>
+
+            {/* REPORTER DETAILS */}
+            <div className="border-t border-slate-200 pt-8">
+
+              <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
+                Reporter Details
+              </p>
+
+              <h3 className="text-xl font-bold mt-1">
+                Your Details
+              </h3>
+
+              <p className="text-slate-600 text-sm mt-2 mb-6">
+                These details can be used for communication about your report.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6">
+
+                <div>
+                  <label className="block font-bold mb-2">
+                    Your Name
+                  </label>
+
+                  <input
+                    type="text"
+                    name="reporter_name"
+                    placeholder="Enter your name"
+                    className="w-full border border-slate-300 rounded-md p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold mb-2">
+                    Email or Phone Number
+                  </label>
+
+                  <input
+                    type="text"
+                    name="contact"
+                    placeholder="Used for updates about your report"
+                    className="w-full border border-slate-300 rounded-md p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  />
+                </div>
+
+              </div>
+            </div>
+
+            {/* SUBMIT */}
             <button
-              type="button"
-              onClick={getCurrentLocation}
-              className="mt-3 bg-white border-2 border-green-700 text-green-700 px-5 py-2 rounded-lg font-semibold hover:bg-green-100"
+              type="submit"
+              disabled={loading}
+              className="w-full bg-slate-900 text-white font-bold py-4 rounded-md text-lg hover:bg-slate-800 disabled:opacity-50"
             >
-              📍 Use My Current Location
+              {loading
+                ? "Submitting Report..."
+                : "Submit Municipal Report →"}
             </button>
 
-            <p className="text-sm text-gray-600 mt-3">
-              Give enough information to help locate the problem.
-            </p>
-
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block font-bold mb-2">
-              Describe the Problem
-            </label>
-
-            <textarea
-              name="description"
-              rows="5"
-              placeholder="Example: There is a large water leak next to the road..."
-              className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
-            ></textarea>
-          </div>
-
-          {/* Photo */}
-          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
-
-            <label className="block font-bold mb-2">
-              📷 Add Photo Evidence
-            </label>
-
-            <p className="text-gray-600 text-sm mb-4">
-              A photo can help municipal staff understand the problem faster.
-            </p>
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => setPhoto(event.target.files[0])}
-              className="w-full bg-white border border-gray-300 rounded-xl p-3 text-gray-900"
-            />
-
-            {photo && (
-              <p className="text-green-700 font-semibold text-sm mt-3">
-                ✓ Photo selected: {photo.name}
-              </p>
+            {/* MESSAGE */}
+            {message && (
+              <div className="border-l-4 border-emerald-600 bg-emerald-50 p-5 text-slate-900 font-semibold">
+                {message}
+              </div>
             )}
 
           </div>
+        </form>
 
-          {/* Reporter Details */}
-          <div className="border-t border-gray-200 pt-7">
+        {/* INFO CARDS */}
+        <div className="grid sm:grid-cols-3 gap-4 mt-8">
 
-            <h3 className="text-xl font-bold mb-1">
-              Your Details
-            </h3>
-
-            <p className="text-gray-600 text-sm mb-5">
-              These details can be used for communication about your report.
+          <div className="bg-white border border-slate-200 p-5 rounded-md">
+            <p className="text-2xl mb-3">
+              📝
             </p>
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <p className="font-bold">
+              Simple Reporting
+            </p>
 
-              <div>
-                <label className="block font-bold mb-2">
-                  Your Name
-                </label>
-
-                <input
-                  type="text"
-                  name="reporter_name"
-                  placeholder="Enter your name"
-                  className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold mb-2">
-                  Email or Phone Number
-                </label>
-
-                <input
-                  type="text"
-                  name="contact"
-                  placeholder="Used for updates about your report"
-                  className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
-                />
-              </div>
-
-            </div>
+            <p className="text-slate-600 text-sm mt-2">
+              Submit municipal problems from one platform.
+            </p>
           </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-green-700 text-white font-bold py-4 rounded-xl text-lg hover:bg-green-800 disabled:opacity-50 shadow-md"
-          >
-            {loading ? "Submitting Report..." : "Submit Municipal Report →"}
-          </button>
+          <div className="bg-white border border-slate-200 p-5 rounded-md">
+            <p className="text-2xl mb-3">
+              🔎
+            </p>
 
-          {/* Message */}
-          {message && (
-            <div className="rounded-xl bg-green-100 border border-green-200 p-5 text-green-900 font-semibold">
-              {message}
-            </div>
-          )}
+            <p className="font-bold">
+              Track Progress
+            </p>
+
+            <p className="text-slate-600 text-sm mt-2">
+              Use your reference number to check status.
+            </p>
+          </div>
+
+          <div className="bg-white border border-slate-200 p-5 rounded-md">
+            <p className="text-2xl mb-3">
+              🌍
+            </p>
+
+            <p className="font-bold">
+              Better Communities
+            </p>
+
+            <p className="text-slate-600 text-sm mt-2">
+              Help identify issues that need attention.
+            </p>
+          </div>
 
         </div>
-      </form>
 
-      {/* INFO CARDS */}
-      <div className="grid sm:grid-cols-3 gap-4 mt-8">
+      </section>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-2xl mb-2">🔐</p>
-          <p className="font-bold">Simple Reporting</p>
-          <p className="text-gray-600 text-sm mt-1">
-            Submit municipal problems from one platform.
-          </p>
+      {/* FOOTER */}
+      <footer className="bg-slate-950 text-slate-300 mt-8">
+
+        <div className="max-w-6xl mx-auto px-6 py-9 flex flex-col md:flex-row justify-between items-center gap-5">
+
+          <div>
+            <p className="text-white font-bold text-lg">
+              YazisaSA
+            </p>
+
+            <p className="text-sm mt-1">
+              Report Today. A Better Tomorrow.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-6 text-sm">
+            <a
+              href="/"
+              className="hover:text-white"
+            >
+              Home
+            </a>
+
+            <a
+              href="/report"
+              className="hover:text-white"
+            >
+              Report
+            </a>
+
+            <a
+              href="/track"
+              className="hover:text-white"
+            >
+              Track
+            </a>
+
+            <a
+              href="/about"
+              className="hover:text-white"
+            >
+              About
+            </a>
+
+            <a
+              href="/review"
+              className="hover:text-white"
+            >
+              Review
+            </a>
+          </div>
+
         </div>
+      </footer>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-2xl mb-2">🔎</p>
-          <p className="font-bold">Track Progress</p>
-          <p className="text-gray-600 text-sm mt-1">
-            Use your reference number to check status.
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-         <p className="text-2xl mb-2">🌍</p>
-          <p className="font-bold">Better Communities</p>
-          <p className="text-gray-600 text-sm mt-1">
-            Help identify issues that need attention.
-          </p>
-        </div>
-
-      </div>
-
-    </section>
-
-    {/* FOOTER */}
-    <footer className="bg-green-900 text-white px-6 py-8 mt-6">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-5">
-
-        <img
-          src="/yazisasa-logo.png"
-          alt="YazisaSA"
-          className="h-16 w-auto bg-white rounded-lg px-2"
-        />
-
-        <div className="flex gap-6 text-sm">
-          <a href="/">Home</a>
-          <a href="/report">Report</a>
-          <a href="/track">Track</a>
-          <a href="/review">Review</a>
-        </div>
-
-        <p className="text-green-200 text-sm">
-          Cleaner Communities. Brighter Tomorrows.
-        </p>
-
-      </div>
-    </footer>
-
-  </main>
-);
+    </main>
+  );
 }

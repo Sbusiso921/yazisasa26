@@ -8,8 +8,16 @@ export default function ReviewPage() {
   const [reportingClarity, setReportingClarity] = useState("");
   const [trackingUsefulness, setTrackingUsefulness] = useState("");
   const [overallRating, setOverallRating] = useState("");
+
   const [improvement, setImprovement] = useState("");
   const [reviewerName, setReviewerName] = useState("");
+
+  // User testing evidence
+  const [ageGroup, setAgeGroup] = useState("");
+  const [digitalExperience, setDigitalExperience] = useState("");
+  const [testerType, setTesterType] = useState("");
+  const [consentGiven, setConsentGiven] = useState(false);
+
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,6 +34,18 @@ export default function ReviewPage() {
       return;
     }
 
+    if (!ageGroup || !digitalExperience || !testerType) {
+      setMessage("Please complete the testing information.");
+      return;
+    }
+
+    if (!consentGiven) {
+      setMessage(
+        "Please confirm that you agree to take part in the prototype testing."
+      );
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -35,8 +55,14 @@ export default function ReviewPage() {
         reporting_clarity: Number(reportingClarity),
         tracking_usefulness: Number(trackingUsefulness),
         overall_rating: Number(overallRating),
+
         improvement,
         reviewer_name: reviewerName,
+
+        age_group: ageGroup,
+        digital_experience: digitalExperience,
+        tester_type: testerType,
+        consent_given: consentGiven,
       },
     ]);
 
@@ -47,13 +73,23 @@ export default function ReviewPage() {
       return;
     }
 
-    setMessage("Thank you for your feedback!");
+    setMessage(
+      "Thank you. Your feedback has been submitted successfully."
+    );
+
     setEaseOfUse("");
     setReportingClarity("");
     setTrackingUsefulness("");
     setOverallRating("");
+
     setImprovement("");
     setReviewerName("");
+
+    setAgeGroup("");
+    setDigitalExperience("");
+    setTesterType("");
+    setConsentGiven(false);
+
     setLoading(false);
   }
 
@@ -65,10 +101,10 @@ export default function ReviewPage() {
             key={number}
             type="button"
             onClick={() => setValue(String(number))}
-            className={`w-12 h-12 rounded-full font-bold border ${
+            className={`w-12 h-12 rounded-md font-bold border transition ${
               value === String(number)
-                ? "bg-green-700 text-white border-green-700"
-                : "bg-white text-gray-900 border-gray-300"
+                ? "bg-slate-900 text-white border-slate-900"
+                : "bg-white text-slate-900 border-slate-300 hover:border-emerald-600"
             }`}
           >
             {number}
@@ -78,237 +114,484 @@ export default function ReviewPage() {
     );
   }
 
- return (
-  <main className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 text-gray-900">
+  return (
+    <main className="min-h-screen bg-slate-50 text-slate-900">
 
-    {/* HEADER */}
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+      {/* HEADER */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
 
-        <a href="/" className="flex items-center">
-          <img
-            src="/yazisasa-logo.png"
-            alt="YazisaSA"
-            className="h-20 md:h-24 w-auto"
-          />
-        </a>
+          <a href="/" className="flex items-center">
+            <img
+              src="/yazisasa-logo.png"
+              alt="YazisaSA"
+              className="h-20 md:h-24 w-auto"
+            />
+          </a>
 
-        <a
-          href="/"
-          className="border border-green-700 text-green-700 px-4 py-2 rounded-lg font-semibold hover:bg-green-50"
-        >
-          Home
-        </a>
+          <a
+            href="/"
+            className="border border-slate-900 text-slate-900 px-5 py-2 rounded-md font-semibold hover:bg-slate-100"
+          >
+            Home
+          </a>
 
-      </div>
-    </header>
+        </div>
+      </header>
 
-    {/* HERO */}
-    <section className="border-b border-green-100">
-      <div className="max-w-4xl mx-auto px-6 pt-12 pb-8 text-center">
+      {/* HERO */}
+      <section className="bg-slate-900 text-white border-b border-slate-800">
 
-        <p className="text-green-700 font-bold uppercase tracking-widest text-sm mb-3">
-          Prototype Feedback
-        </p>
+        <div className="max-w-4xl mx-auto px-6 py-16 text-center">
 
-        <h1 className="text-4xl md:text-5xl font-bold">
-          Review <span className="text-green-700">YazisaSA</span>
-        </h1>
+          <p className="text-emerald-400 font-bold uppercase tracking-[0.2em] text-sm">
+            Prototype Feedback
+          </p>
 
-        <p className="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">
-          Your feedback helps us understand what works well and what should
-          be improved in the next version.
-        </p>
+          <h1 className="text-4xl md:text-5xl font-bold mt-4">
+            Review{" "}
+            <span className="text-emerald-400">
+              YazisaSA
+            </span>
+          </h1>
 
-      </div>
-    </section>
+          <p className="text-slate-300 text-lg mt-5 max-w-2xl mx-auto leading-8">
+            Your feedback helps us understand what works well and what can be
+            improved in future versions of YazisaSA.
+          </p>
 
-    <section className="max-w-4xl mx-auto px-6 py-10">
+        </div>
+      </section>
 
-      <div className="grid lg:grid-cols-3 gap-8 items-start">
+      {/* PAGE CONTENT */}
+      <section className="max-w-5xl mx-auto px-6 py-12">
 
-        {/* LEFT INFO */}
-        <div className="space-y-4">
+        <div className="grid lg:grid-cols-3 gap-8 items-start">
 
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-            <p className="text-2xl mb-2">⭐</p>
-            <h2 className="font-bold text-lg">
-              Quick Feedback
-            </h2>
-            <p className="text-gray-600 text-sm mt-1">
-              Most questions only require a 1 to 5 rating.
-            </p>
+          {/* LEFT SIDE */}
+          <div className="space-y-4">
+
+            <div className="bg-white border border-slate-200 p-5 rounded-md">
+
+              <p className="text-2xl mb-3">
+                ⭐
+              </p>
+
+              <h2 className="font-bold text-lg">
+                Quick Feedback
+              </h2>
+
+              <p className="text-slate-600 text-sm mt-2">
+                Most questions only require a rating from 1 to 5.
+              </p>
+
+            </div>
+
+            <div className="bg-white border border-slate-200 p-5 rounded-md">
+
+              <p className="text-2xl mb-3">
+                📊
+              </p>
+
+              <h2 className="font-bold text-lg">
+                Improve the Prototype
+              </h2>
+
+              <p className="text-slate-600 text-sm mt-2">
+                Your feedback helps identify what works and what still needs
+                improvement.
+              </p>
+
+            </div>
+
+            <div className="bg-slate-900 text-white p-6 rounded-md">
+
+              <p className="text-emerald-400 text-sm uppercase tracking-widest font-bold">
+                YazisaSA
+              </p>
+
+              <h2 className="text-2xl font-bold mt-3">
+                Report it.
+                <br />
+                Track it.
+                <br />
+                <span className="text-emerald-400">
+                  Improve it.
+                </span>
+              </h2>
+
+            </div>
+
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-            <p className="text-2xl mb-2">📊</p>
-            <h2 className="font-bold text-lg">
-              Improve the Prototype
-            </h2>
-            <p className="text-gray-600 text-sm mt-1">
-              Your ratings help identify areas that need improvement.
-            </p>
+          {/* REVIEW FORM */}
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-md overflow-hidden">
+
+            <div className="border-b border-slate-200 px-6 md:px-8 py-7">
+
+              <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
+                User Testing
+              </p>
+
+              <h2 className="text-2xl font-bold mt-2">
+                Tell Us About Your Experience
+              </h2>
+
+              <p className="text-slate-600 mt-2">
+                Please complete the short testing information and rate
+                YazisaSA from 1 to 5.
+              </p>
+
+            </div>
+
+            <form
+              onSubmit={handleSubmit}
+              className="p-6 md:p-8 space-y-9"
+            >
+
+              {/* TESTER DETAILS */}
+              <div>
+
+                <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
+                  About the Tester
+                </p>
+
+                <h3 className="text-xl font-bold mt-2">
+                  Testing Information
+                </h3>
+
+                <p className="text-slate-600 text-sm mt-2">
+                  This information helps evaluate the prototype across
+                  different types of users. Exact age is not required.
+                </p>
+
+                <div className="grid md:grid-cols-2 gap-5 mt-6">
+
+                  {/* AGE GROUP */}
+                  <div>
+
+                    <label className="block font-bold mb-2">
+                      Age Group
+                    </label>
+
+                    <select
+                      value={ageGroup}
+                      onChange={(event) =>
+                        setAgeGroup(event.target.value)
+                      }
+                      className="w-full border border-slate-300 rounded-md p-3 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    >
+                      <option value="">
+                        Select age group
+                      </option>
+
+                      <option value="Under 18">
+                        Under 18
+                      </option>
+
+                      <option value="18-25">
+                        18–25
+                      </option>
+
+                      <option value="26-40">
+                        26–40
+                      </option>
+
+                      <option value="41-60">
+                        41–60
+                      </option>
+
+                      <option value="60+">
+                        60+
+                      </option>
+
+                      <option value="Prefer not to say">
+                        Prefer not to say
+                      </option>
+                    </select>
+
+                  </div>
+
+                  {/* DIGITAL EXPERIENCE */}
+                  <div>
+
+                    <label className="block font-bold mb-2">
+                      Digital Experience
+                    </label>
+
+                    <select
+                      value={digitalExperience}
+                      onChange={(event) =>
+                        setDigitalExperience(event.target.value)
+                      }
+                      className="w-full border border-slate-300 rounded-md p-3 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    >
+                      <option value="">
+                        Select level
+                      </option>
+
+                      <option value="Low">
+                        Low
+                      </option>
+
+                      <option value="Medium">
+                        Medium
+                      </option>
+
+                      <option value="High">
+                        High
+                      </option>
+                    </select>
+
+                  </div>
+
+                  {/* TESTER TYPE */}
+                  <div className="md:col-span-2">
+
+                    <label className="block font-bold mb-2">
+                      Tester Type
+                    </label>
+
+                    <select
+                      value={testerType}
+                      onChange={(event) =>
+                        setTesterType(event.target.value)
+                      }
+                      className="w-full border border-slate-300 rounded-md p-3 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    >
+                      <option value="">
+                        Select tester type
+                      </option>
+
+                      <option value="Resident">
+                        Resident
+                      </option>
+
+                      <option value="Municipal Employee">
+                        Municipal Employee
+                      </option>
+
+                      <option value="Other">
+                        Other
+                      </option>
+                    </select>
+
+                  </div>
+
+                </div>
+              </div>
+
+              {/* CONSENT */}
+              <div className="border-l-4 border-emerald-600 bg-slate-50 p-6">
+
+                <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
+                  Prototype Testing Consent
+                </p>
+
+                <p className="text-slate-700 mt-3 leading-7">
+                  I voluntarily agree to test the YazisaSA prototype and allow
+                  my feedback to be used for project evaluation and improvement.
+                  I understand that participation is voluntary.
+                </p>
+
+                <label className="flex items-start gap-3 mt-5 cursor-pointer">
+
+                  <input
+                    type="checkbox"
+                    checked={consentGiven}
+                    onChange={(event) =>
+                      setConsentGiven(event.target.checked)
+                    }
+                    className="mt-1 w-5 h-5 accent-emerald-600"
+                  />
+
+                  <span className="font-bold">
+                    I agree to participate in the YazisaSA prototype testing.
+                  </span>
+
+                </label>
+
+              </div>
+
+              {/* RATINGS */}
+              <div className="border-t border-slate-200 pt-8">
+
+                <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
+                  Prototype Ratings
+                </p>
+
+                <p className="text-slate-600 mt-2">
+                  1 = Very Poor &nbsp;&nbsp; 5 = Excellent
+                </p>
+
+              </div>
+
+              <div>
+                <p className="font-bold">
+                  1. How easy was YazisaSA to use?
+                </p>
+
+                <RatingButtons
+                  value={easeOfUse}
+                  setValue={setEaseOfUse}
+                />
+              </div>
+
+              <div>
+                <p className="font-bold">
+                  2. How clear was the reporting process?
+                </p>
+
+                <RatingButtons
+                  value={reportingClarity}
+                  setValue={setReportingClarity}
+                />
+              </div>
+
+              <div>
+                <p className="font-bold">
+                  3. How useful was the tracking feature?
+                </p>
+
+                <RatingButtons
+                  value={trackingUsefulness}
+                  setValue={setTrackingUsefulness}
+                />
+              </div>
+
+              <div>
+                <p className="font-bold">
+                  4. Overall, how would you rate YazisaSA?
+                </p>
+
+                <RatingButtons
+                  value={overallRating}
+                  setValue={setOverallRating}
+                />
+              </div>
+
+              {/* IMPROVEMENT */}
+              <div className="border-t border-slate-200 pt-8">
+
+                <label className="block font-bold mb-2">
+                  What would you improve? (Optional)
+                </label>
+
+                <textarea
+                  value={improvement}
+                  onChange={(event) =>
+                    setImprovement(event.target.value)
+                  }
+                  rows="4"
+                  placeholder="Write one suggestion..."
+                  className="w-full border border-slate-300 rounded-md p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+
+              </div>
+
+              {/* NAME */}
+              <div>
+
+                <label className="block font-bold mb-2">
+                  Your Name (Optional)
+                </label>
+
+                <p className="text-sm text-slate-600 mb-3">
+                  You may leave this blank if you prefer your feedback to be
+                  anonymous.
+                </p>
+
+                <input
+                  type="text"
+                  value={reviewerName}
+                  onChange={(event) =>
+                    setReviewerName(event.target.value)
+                  }
+                  placeholder="Enter your name"
+                  className="w-full border border-slate-300 rounded-md p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+
+              </div>
+
+              {/* SUBMIT */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-slate-900 text-white py-4 rounded-md font-bold text-lg hover:bg-slate-800 disabled:opacity-50"
+              >
+                {loading
+                  ? "Submitting..."
+                  : "Submit Review →"}
+              </button>
+
+              {/* MESSAGE */}
+              {message && (
+                <div className="border-l-4 border-emerald-600 bg-emerald-50 p-4 text-slate-900 font-semibold">
+                  {message}
+                </div>
+              )}
+
+            </form>
+
           </div>
 
-          <div className="bg-green-800 text-white rounded-2xl p-5 shadow-sm">
-            <p className="text-green-200 text-sm uppercase tracking-widest font-bold">
+        </div>
+
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-slate-950 text-slate-300 mt-8">
+
+        <div className="max-w-6xl mx-auto px-6 py-9 flex flex-col md:flex-row justify-between items-center gap-5">
+
+          <div>
+
+            <p className="text-white font-bold text-lg">
               YazisaSA
             </p>
 
-            <h2 className="text-2xl font-bold mt-2">
-              Report it.
-              <br />
-              Track it.
-              <br />
-              Improve it.
-            </h2>
-          </div>
-
-        </div>
-
-        {/* REVIEW FORM */}
-        <div className="lg:col-span-2 bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-
-          <div className="bg-green-800 text-white px-6 md:px-8 py-6">
-
-            <h2 className="text-2xl font-bold">
-              Tell Us About Your Experience
-            </h2>
-
-            <p className="text-green-100 mt-1">
-              Rate each question from 1 to 5.
+            <p className="text-sm mt-1">
+              Report Today. A Better Tomorrow.
             </p>
 
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="p-6 md:p-8 space-y-8"
-          >
+          <div className="flex gap-6 text-sm">
 
-            <div>
-              <p className="font-bold">
-                1. How easy was YazisaSA to use?
-              </p>
-
-              <RatingButtons
-                value={easeOfUse}
-                setValue={setEaseOfUse}
-              />
-            </div>
-
-            <div>
-              <p className="font-bold">
-                2. How clear was the reporting process?
-              </p>
-
-              <RatingButtons
-                value={reportingClarity}
-                setValue={setReportingClarity}
-              />
-            </div>
-
-            <div>
-              <p className="font-bold">
-                3. How useful was the tracking feature?
-              </p>
-
-              <RatingButtons
-                value={trackingUsefulness}
-                setValue={setTrackingUsefulness}
-              />
-            </div>
-
-            <div>
-              <p className="font-bold">
-                4. Overall, how would you rate YazisaSA?
-              </p>
-
-              <RatingButtons
-                value={overallRating}
-                setValue={setOverallRating}
-              />
-            </div>
-
-            <div className="border-t border-gray-200 pt-7">
-
-              <label className="block font-bold mb-2">
-                What would you improve? (optional)
-              </label>
-
-              <textarea
-                value={improvement}
-                onChange={(event) => setImprovement(event.target.value)}
-                rows="4"
-                placeholder="Write one suggestion..."
-                className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
-              />
-
-            </div>
-
-            <div>
-
-              <label className="block font-bold mb-2">
-                Your name (optional)
-              </label>
-
-              <input
-                type="text"
-                value={reviewerName}
-                onChange={(event) => setReviewerName(event.target.value)}
-                placeholder="Enter your name"
-                className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
-              />
-
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-green-700 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-800 disabled:opacity-50 shadow-md"
+            <a
+              href="/"
+              className="hover:text-white"
             >
-              {loading ? "Submitting..." : "Submit Review →"}
-            </button>
+              Home
+            </a>
 
-            {message && (
-              <div className="rounded-xl bg-green-100 border border-green-200 p-4 text-green-900 font-semibold text-center">
-                {message}
-              </div>
-            )}
+            <a
+              href="/report"
+              className="hover:text-white"
+            >
+              Report
+            </a>
 
-          </form>
+            <a
+              href="/track"
+              className="hover:text-white"
+            >
+              Track
+            </a>
+
+            <a
+              href="/about"
+              className="hover:text-white"
+            >
+              About
+            </a>
+
+          </div>
 
         </div>
 
-      </div>
+      </footer>
 
-    </section>
-
-    {/* FOOTER */}
-    <footer className="bg-green-900 text-white px-6 py-8 mt-6">
-
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-5">
-
-        <img
-          src="/yazisasa-logo.png"
-          alt="YazisaSA"
-          className="h-16 w-auto bg-white rounded-lg px-2"
-        />
-
-        <div className="flex gap-6 text-sm">
-          <a href="/">Home</a>
-          <a href="/report">Report</a>
-          <a href="/track">Track</a>
-        </div>
-
-        <p className="text-green-200 text-sm">
-          Cleaner Communities. Brighter Tomorrows.
-        </p>
-
-      </div>
-
-    </footer>
-
-  </main>
-);
+    </main>
+  );
 }
