@@ -14,6 +14,11 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "YazisaSA - Report Municipal Problems",
   description: "Report potholes, water leaks, streetlight faults and illegal dumping to your municipality, then track progress with your reference number.",
+  openGraph: {
+    title: "YazisaSA - Report Municipal Problems",
+    description: "Report potholes, water leaks, streetlight faults and illegal dumping to your municipality, then track progress with your reference number.",
+    images: ["/yazisasa-logo.png"],
+  },
 };
 
 export default function RootLayout({ children }) {
