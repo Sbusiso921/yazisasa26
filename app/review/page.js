@@ -4,6 +4,8 @@ import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 
 export default function ReviewPage() {
+  const [reportReference, setReportReference] = useState("");
+
   const [easeOfUse, setEaseOfUse] = useState("");
   const [reportingClarity, setReportingClarity] = useState("");
   const [trackingUsefulness, setTrackingUsefulness] = useState("");
@@ -24,6 +26,17 @@ export default function ReviewPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    const cleanReference = reportReference.trim().toUpperCase();
+
+    // Reference number required
+    if (!cleanReference) {
+      setMessage(
+        "Please enter the YazisaSA reference number you received when you submitted your report."
+      );
+      return;
+    }
+
+    // Ratings required
     if (
       !easeOfUse ||
       !reportingClarity ||
@@ -34,11 +47,13 @@ export default function ReviewPage() {
       return;
     }
 
+    // Tester information required
     if (!ageGroup || !digitalExperience || !testerType) {
       setMessage("Please complete the testing information.");
       return;
     }
 
+    // Consent required
     if (!consentGiven) {
       setMessage(
         "Please confirm that you agree to take part in the prototype testing."
@@ -49,8 +64,63 @@ export default function ReviewPage() {
     setLoading(true);
     setMessage("");
 
+    // STEP 1:
+    // Check if this reference number exists in the reports table
+    const { data: reportData, error: reportError } = await supabase
+      .from("reports")
+      .select("reference_number")
+      .eq("reference_number", cleanReference)
+      .maybeSingle();
+
+    if (reportError) {
+      console.error(reportError);
+      setMessage(
+        "We could not verify your reference number. Please try again."
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (!reportData) {
+      setMessage(
+        "Reference number not found. Please enter a valid YazisaSA report reference."
+      );
+      setLoading(false);
+      return;
+    }
+
+    // STEP 2:
+    // Check if this reference has already been used for a review
+    const { data: existingReview, error: reviewCheckError } =
+      await supabase
+        .from("reviews")
+        .select("id")
+        .eq("report_reference", cleanReference)
+        .maybeSingle();
+
+    if (reviewCheckError) {
+      console.error(reviewCheckError);
+      setMessage(
+        "We could not verify whether this reference has already been reviewed. Please try again."
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (existingReview) {
+      setMessage(
+        "This reference number has already been used to submit a review."
+      );
+      setLoading(false);
+      return;
+    }
+
+    // STEP 3:
+    // Save the review
     const { error } = await supabase.from("reviews").insert([
       {
+        report_reference: cleanReference,
+
         ease_of_use: Number(easeOfUse),
         reporting_clarity: Number(reportingClarity),
         tracking_usefulness: Number(trackingUsefulness),
@@ -77,6 +147,9 @@ export default function ReviewPage() {
       "Thank you. Your feedback has been submitted successfully."
     );
 
+    // Reset form
+    setReportReference("");
+
     setEaseOfUse("");
     setReportingClarity("");
     setTrackingUsefulness("");
@@ -96,7 +169,9 @@ export default function ReviewPage() {
   function RatingButtons({ value, setValue }) {
     return (
       <div className="flex gap-3 flex-wrap mt-3">
+
         {[1, 2, 3, 4, 5].map((number) => (
+
           <button
             key={number}
             type="button"
@@ -109,7 +184,9 @@ export default function ReviewPage() {
           >
             {number}
           </button>
+
         ))}
+
       </div>
     );
   }
@@ -119,14 +196,17 @@ export default function ReviewPage() {
 
       {/* HEADER */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
 
           <a href="/" className="flex items-center">
+
             <img
               src="/yazisasa-logo.png"
               alt="YazisaSA"
               className="h-20 md:h-24 w-auto"
             />
+
           </a>
 
           <a
@@ -137,6 +217,7 @@ export default function ReviewPage() {
           </a>
 
         </div>
+
       </header>
 
       {/* HERO */}
@@ -161,6 +242,7 @@ export default function ReviewPage() {
           </p>
 
         </div>
+
       </section>
 
       {/* PAGE CONTENT */}
@@ -183,6 +265,23 @@ export default function ReviewPage() {
 
               <p className="text-slate-600 text-sm mt-2">
                 Most questions only require a rating from 1 to 5.
+              </p>
+
+            </div>
+
+            <div className="bg-white border border-slate-200 p-5 rounded-md">
+
+              <p className="text-2xl mb-3">
+                🔎
+              </p>
+
+              <h2 className="font-bold text-lg">
+                Verified Testing
+              </h2>
+
+              <p className="text-slate-600 text-sm mt-2">
+                A valid YazisaSA report reference is required before feedback
+                can be submitted.
               </p>
 
             </div>
@@ -238,8 +337,8 @@ export default function ReviewPage() {
               </h2>
 
               <p className="text-slate-600 mt-2">
-                Please complete the short testing information and rate
-                YazisaSA from 1 to 5.
+                Please enter the reference number from the report you tested,
+                then complete the short feedback form.
               </p>
 
             </div>
@@ -248,6 +347,36 @@ export default function ReviewPage() {
               onSubmit={handleSubmit}
               className="p-6 md:p-8 space-y-9"
             >
+
+              {/* REPORT VERIFICATION */}
+              <div className="border-l-4 border-emerald-600 bg-emerald-50 p-6">
+
+                <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
+                  Verify Prototype Use
+                </p>
+
+                <h3 className="text-xl font-bold mt-2">
+                  Your YazisaSA Reference Number
+                </h3>
+
+                <p className="text-slate-600 text-sm mt-2">
+                  Enter the reference number you received after submitting a
+                  municipal fault report. Each reference number can only be used
+                  for one review.
+                </p>
+
+                <input
+                  type="text"
+                  value={reportReference}
+                  onChange={(event) =>
+                    setReportReference(event.target.value.toUpperCase())
+                  }
+                  placeholder="Example: YSA-963736"
+                  className="w-full mt-5 border border-slate-300 rounded-md p-3 text-slate-900 uppercase focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  required
+                />
+
+              </div>
 
               {/* TESTER DETAILS */}
               <div>
@@ -308,6 +437,7 @@ export default function ReviewPage() {
                       <option value="Prefer not to say">
                         Prefer not to say
                       </option>
+
                     </select>
 
                   </div>
@@ -341,6 +471,7 @@ export default function ReviewPage() {
                       <option value="High">
                         High
                       </option>
+
                     </select>
 
                   </div>
@@ -374,11 +505,13 @@ export default function ReviewPage() {
                       <option value="Other">
                         Other
                       </option>
+
                     </select>
 
                   </div>
 
                 </div>
+
               </div>
 
               {/* CONSENT */}
@@ -427,6 +560,7 @@ export default function ReviewPage() {
               </div>
 
               <div>
+
                 <p className="font-bold">
                   1. How easy was YazisaSA to use?
                 </p>
@@ -435,9 +569,11 @@ export default function ReviewPage() {
                   value={easeOfUse}
                   setValue={setEaseOfUse}
                 />
+
               </div>
 
               <div>
+
                 <p className="font-bold">
                   2. How clear was the reporting process?
                 </p>
@@ -446,9 +582,11 @@ export default function ReviewPage() {
                   value={reportingClarity}
                   setValue={setReportingClarity}
                 />
+
               </div>
 
               <div>
+
                 <p className="font-bold">
                   3. How useful was the tracking feature?
                 </p>
@@ -457,9 +595,11 @@ export default function ReviewPage() {
                   value={trackingUsefulness}
                   setValue={setTrackingUsefulness}
                 />
+
               </div>
 
               <div>
+
                 <p className="font-bold">
                   4. Overall, how would you rate YazisaSA?
                 </p>
@@ -468,6 +608,7 @@ export default function ReviewPage() {
                   value={overallRating}
                   setValue={setOverallRating}
                 />
+
               </div>
 
               {/* IMPROVEMENT */}
@@ -520,7 +661,7 @@ export default function ReviewPage() {
                 className="w-full bg-slate-900 text-white py-4 rounded-md font-bold text-lg hover:bg-slate-800 disabled:opacity-50"
               >
                 {loading
-                  ? "Submitting..."
+                  ? "Verifying & Submitting..."
                   : "Submit Review →"}
               </button>
 

@@ -11,6 +11,7 @@ export default function ReportPage() {
   const [location, setLocation] = useState("");
   const [province, setProvince] = useState("");
   const [municipality, setMunicipality] = useState("");
+  const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
 
   function getCurrentLocation() {
     if (!navigator.geolocation) {
@@ -38,6 +39,13 @@ export default function ReportPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    if (!privacyAcknowledged) {
+      setMessage(
+        "Please read and acknowledge the Privacy & POPIA Notice before submitting your report."
+      );
+      return;
+    }
 
     setLoading(true);
     setMessage("");
@@ -72,7 +80,7 @@ export default function ReportPage() {
     const referenceNumber =
       "YSA-" + Math.floor(100000 + Math.random() * 900000);
 
-    // Save report to Supabase
+    // Save report
     const { error } = await supabase.from("reports").insert([
       {
         reference_number: referenceNumber,
@@ -83,6 +91,7 @@ export default function ReportPage() {
         description: formData.get("description"),
         reporter_name: formData.get("reporter_name"),
         contact: formData.get("contact"),
+        privacy_acknowledged: privacyAcknowledged,
         status: "Submitted",
         photo_url: photoUrl,
       },
@@ -103,6 +112,7 @@ export default function ReportPage() {
       setProvince("");
       setMunicipality("");
       setPhoto(null);
+      setPrivacyAcknowledged(false);
     }
 
     setLoading(false);
@@ -145,6 +155,7 @@ export default function ReportPage() {
 
       {/* HERO */}
       <section className="bg-slate-900 text-white border-b border-slate-800">
+
         <div className="max-w-4xl mx-auto px-6 py-16">
 
           <p className="text-emerald-400 font-bold uppercase tracking-[0.2em] text-sm">
@@ -202,6 +213,7 @@ export default function ReportPage() {
 
             {/* PROBLEM TYPE */}
             <div>
+
               <label className="block font-bold mb-2">
                 What is the problem?
               </label>
@@ -223,12 +235,14 @@ export default function ReportPage() {
                 <option>Damaged Road</option>
                 <option>Other Municipal Fault</option>
               </select>
+
             </div>
 
             {/* LOCATION DETAILS */}
             <div className="border-t border-slate-200 pt-8">
 
               <div className="mb-6">
+
                 <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
                   Location Details
                 </p>
@@ -236,12 +250,14 @@ export default function ReportPage() {
                 <h3 className="text-xl font-bold mt-1">
                   Where is the problem?
                 </h3>
+
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
 
                 {/* PROVINCE */}
                 <div>
+
                   <label className="block font-bold mb-2">
                     Province
                   </label>
@@ -270,10 +286,12 @@ export default function ReportPage() {
                       )
                     )}
                   </select>
+
                 </div>
 
                 {/* MUNICIPALITY */}
                 <div>
+
                   <label className="block font-bold mb-2">
                     Municipality
                   </label>
@@ -306,10 +324,12 @@ export default function ReportPage() {
                         )
                       )}
                   </select>
+
                 </div>
 
                 {/* AREA */}
                 <div className="md:col-span-2">
+
                   <label className="block font-bold mb-2">
                     Suburb / Area
                   </label>
@@ -321,6 +341,7 @@ export default function ReportPage() {
                     placeholder="Example: Richards Bay Central"
                     className="w-full border border-slate-300 rounded-md p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                   />
+
                 </div>
 
               </div>
@@ -426,6 +447,7 @@ export default function ReportPage() {
               <div className="grid md:grid-cols-2 gap-6">
 
                 <div>
+
                   <label className="block font-bold mb-2">
                     Your Name
                   </label>
@@ -436,9 +458,11 @@ export default function ReportPage() {
                     placeholder="Enter your name"
                     className="w-full border border-slate-300 rounded-md p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                   />
+
                 </div>
 
                 <div>
+
                   <label className="block font-bold mb-2">
                     Email or Phone Number
                   </label>
@@ -449,9 +473,60 @@ export default function ReportPage() {
                     placeholder="Used for updates about your report"
                     className="w-full border border-slate-300 rounded-md p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                   />
+
                 </div>
 
               </div>
+            </div>
+
+            {/* PRIVACY & POPIA NOTICE */}
+            <div className="border-l-4 border-emerald-600 bg-slate-50 p-6">
+
+              <p className="text-emerald-700 uppercase tracking-widest text-sm font-bold">
+                Privacy & POPIA Notice
+              </p>
+
+              <h3 className="text-lg font-bold mt-2">
+                How Your Information Will Be Used
+              </h3>
+
+              <p className="text-slate-700 text-sm mt-3 leading-7">
+                YazisaSA collects the information you provide to process and
+                demonstrate municipal fault reporting. This may include your
+                contact details, fault location and an uploaded photograph.
+              </p>
+
+              <p className="text-slate-700 text-sm mt-3 leading-7">
+                Your information will only be used for the purpose of this
+                prototype and should only be accessed by authorised municipal
+                staff. Please avoid including unnecessary personal information
+                in photographs or descriptions.
+              </p>
+
+              <p className="text-slate-600 text-sm mt-3">
+                This notice supports the responsible handling of personal
+                information in line with the Protection of Personal Information
+                Act (POPIA).
+              </p>
+
+              <label className="flex items-start gap-3 mt-5 cursor-pointer">
+
+                <input
+                  type="checkbox"
+                  checked={privacyAcknowledged}
+                  onChange={(event) =>
+                    setPrivacyAcknowledged(event.target.checked)
+                  }
+                  className="mt-1 w-5 h-5 accent-emerald-600"
+                />
+
+                <span className="font-semibold text-slate-900">
+                  I have read the privacy notice and understand how my
+                  information will be used.
+                </span>
+
+              </label>
+
             </div>
 
             {/* SUBMIT */}
@@ -479,6 +554,7 @@ export default function ReportPage() {
         <div className="grid sm:grid-cols-3 gap-4 mt-8">
 
           <div className="bg-white border border-slate-200 p-5 rounded-md">
+
             <p className="text-2xl mb-3">
               📝
             </p>
@@ -490,9 +566,11 @@ export default function ReportPage() {
             <p className="text-slate-600 text-sm mt-2">
               Submit municipal problems from one platform.
             </p>
+
           </div>
 
           <div className="bg-white border border-slate-200 p-5 rounded-md">
+
             <p className="text-2xl mb-3">
               🔎
             </p>
@@ -504,9 +582,11 @@ export default function ReportPage() {
             <p className="text-slate-600 text-sm mt-2">
               Use your reference number to check status.
             </p>
+
           </div>
 
           <div className="bg-white border border-slate-200 p-5 rounded-md">
+
             <p className="text-2xl mb-3">
               🌍
             </p>
@@ -518,6 +598,7 @@ export default function ReportPage() {
             <p className="text-slate-600 text-sm mt-2">
               Help identify issues that need attention.
             </p>
+
           </div>
 
         </div>
@@ -530,6 +611,7 @@ export default function ReportPage() {
         <div className="max-w-6xl mx-auto px-6 py-9 flex flex-col md:flex-row justify-between items-center gap-5">
 
           <div>
+
             <p className="text-white font-bold text-lg">
               YazisaSA
             </p>
@@ -537,9 +619,11 @@ export default function ReportPage() {
             <p className="text-sm mt-1">
               Report Today. A Better Tomorrow.
             </p>
+
           </div>
 
           <div className="flex flex-wrap gap-6 text-sm">
+
             <a
               href="/"
               className="hover:text-white"
@@ -574,9 +658,11 @@ export default function ReportPage() {
             >
               Review
             </a>
+
           </div>
 
         </div>
+
       </footer>
 
     </main>
